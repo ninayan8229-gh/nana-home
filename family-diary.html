@@ -417,6 +417,11 @@ input:checked+.toggle-track::before{transform:translateX(20px)}
     <div id="fam-card-wrap"></div>
     <div class="menu-sec">
       <div class="menu-grp">
+        <div class="menu-item" onclick="editMyRole()">
+          <div class="mi-icon" style="background:var(--purple-light)">🏷️</div>
+          <div class="mi-text"><div class="mi-title" id="my-role-display">设置我的身份</div><div class="mi-sub">让家人知道你是谁</div></div>
+          <div class="mi-arr">›</div>
+        </div>
         <div class="menu-item" onclick="showFamCode()">
           <div class="mi-icon" style="background:var(--green-light)">🏠</div>
           <div class="mi-text"><div class="mi-title">家庭邀请码</div><div class="mi-sub">分享给家人邀请加入</div></div>
@@ -697,6 +702,42 @@ window.doLogout=function(){
   ['ln','lp','lc'].forEach(function(id){document.getElementById(id).value=''});
   toast('已退出');
 }
+window.editMyRole=function(){
+  var roles=['妈妈','爸爸','女儿','儿子','爷爷','奶奶','外公','外婆','其他'];
+  var avatars=['👩','👨','👧','👦','👴','👵','🧓','👵','👤'];
+  var options=roles.map(function(r,i){
+    return'<div class="av-opt'+(ME.role===r?' selected':'')+'" data-role="'+r+'" data-av="'+avatars[i]+'" onclick="selectMyRole(this)">'+avatars[i]+' '+r+'</div>';
+  }).join('');
+  showSheet('设置我的身份','让家人一眼认出你',
+    '<div class="avatar-picker" id="edit-role-picker">'+options+'</div>'+
+    '<button class="btn-primary" onclick="saveMyRole()" style="width:100%;margin-top:16px">保存</button>'
+  );
+}
+window.selectMyRole=function(el){
+  document.querySelectorAll('#edit-role-picker .av-opt').forEach(function(e){e.classList.remove('selected')});
+  el.classList.add('selected');
+}
+window.saveMyRole=async function(){
+  var selected=document.querySelector('#edit-role-picker .av-opt.selected');
+  if(!selected) return;
+  var newRole=selected.dataset.role;
+  var newAv=selected.dataset.av;
+  await db.ref('users/'+ME.userId+'/role').set(newRole);
+  await db.ref('families/'+ME.familyCode+'/members/'+ME.userId+'/role').set(newRole);
+  if(newAv!==ME.avatar){
+    await db.ref('users/'+ME.userId+'/avatar').set(newAv);
+    await db.ref('families/'+ME.familyCode+'/members/'+ME.userId+'/avatar').set(newAv);
+  }
+  ME.role=newRole;
+  ME.avatar=newAv;
+  localStorage.setItem('fam_user',JSON.stringify(ME));
+  document.getElementById('top-av').textContent=ME.avatar;
+  document.getElementById('prof-av').textContent=ME.avatar;
+  document.getElementById('prof-role').textContent=(FAM?FAM.name+' · ':'')+ME.role;
+  document.getElementById('my-role-display').textContent=ME.role;
+  closeSheet();
+  toast('已保存');
+}
 
 // ===== START APP =====
 async function startApp(){
@@ -712,7 +753,8 @@ async function startApp(){
     document.getElementById('mem-sub').textContent='共'+mems.length+'位成员';
     document.getElementById('prof-av').textContent=ME.avatar;
     document.getElementById('prof-name').textContent=ME.name;
-    document.getElementById('prof-role').textContent=FAM.name+'的成员';
+    document.getElementById('prof-role').textContent=FAM.name+(ME.role?' · '+ME.role:'');
+    document.getElementById('my-role-display').textContent=ME.role||'设置我的身份';
 
     var avHtml=mems.map(function(m){return'<div class="mem-av">'+m.avatar+'</div>'}).join('');
     document.getElementById('fam-card-wrap').innerHTML='<div class="fam-card"><div class="fam-card-icon">🏡</div><div><div style="font-size:15px;font-weight:600;color:#1A3A2A">'+FAM.name+'</div><div class="fam-card-code">'+FAM.code+'</div><div class="fam-members">'+avHtml+'</div></div></div>';
