@@ -331,6 +331,20 @@ input:checked+.toggle-track::before{transform:translateX(20px)}
         <input class="form-input" id="rp" type="password" placeholder="设置密码（至少4位）">
       </div>
       <div class="form-group">
+        <label class="form-label">我的身份</label>
+        <div class="avatar-picker" id="role-picker">
+          <div class="av-opt selected" data-role="妈妈" onclick="pickRole(this)">👩 妈妈</div>
+          <div class="av-opt" data-role="爸爸" onclick="pickRole(this)">👨 爸爸</div>
+          <div class="av-opt" data-role="女儿" onclick="pickRole(this)">👧 女儿</div>
+          <div class="av-opt" data-role="儿子" onclick="pickRole(this)">👦 儿子</div>
+          <div class="av-opt" data-role="爷爷" onclick="pickRole(this)">👴 爷爷</div>
+          <div class="av-opt" data-role="奶奶" onclick="pickRole(this)">👵 奶奶</div>
+          <div class="av-opt" data-role="外公" onclick="pickRole(this)">🧓 外公</div>
+          <div class="av-opt" data-role="外婆" onclick="pickRole(this)">👵 外婆</div>
+          <div class="av-opt" data-role="其他" onclick="pickRole(this)">👤 其他</div>
+        </div>
+      </div>
+      <div class="form-group">
         <label class="form-label">家庭</label>
         <div class="join-row">
           <button class="mode-btn active" id="mb-create" onclick="setFamMode('create')">创建新家庭</button>
@@ -591,6 +605,11 @@ window.pickAv=function(el){
   document.querySelectorAll('.av-opt').forEach(function(e){e.classList.remove('selected')});
   el.classList.add('selected'); selAv=el.dataset.av;
 }
+var selRole='妈妈';
+window.pickRole=function(el){
+  document.querySelectorAll('#role-picker .av-opt').forEach(function(e){e.classList.remove('selected')});
+  el.classList.add('selected'); selRole=el.dataset.role;
+}
 var famMode='create';
 window.setFamMode=function(m){
   famMode=m;
@@ -633,13 +652,13 @@ window.doRegister=async function(){
   }
 
   var userId=name+'__'+famCode;
-  var udata={name:name,avatar:selAv,familyCode:famCode};
+  var udata={name:name,avatar:selAv,familyCode:famCode,role:selRole};
   await db.ref('users/'+userId).set(Object.assign({},udata,{pwd:pwd,createdAt:Date.now()}));
 
   if(famMode==='create'){
     await db.ref('families/'+famCode).set({code:famCode,name:name+'的家庭',createdAt:Date.now(),members:{}});
   }
-  await db.ref('families/'+famCode+'/members/'+userId).set({name:name,avatar:selAv,joinedAt:Date.now()});
+  await db.ref('families/'+famCode+'/members/'+userId).set({name:name,avatar:selAv,role:selRole,joinedAt:Date.now()});
 
   ME=Object.assign({userId:userId},udata);
   localStorage.setItem('fam_user',JSON.stringify(ME));
@@ -663,7 +682,7 @@ window.doLogin=async function(){
   if(!snap.exists()){toast('账号不存在，请先注册');return;}
   var u=snap.val();
   if(u.pwd!==pwd){toast('密码错误');return;}
-  ME={userId:userId,name:u.name,avatar:u.avatar,familyCode:u.familyCode};
+  ME={userId:userId,name:u.name,avatar:u.avatar,familyCode:u.familyCode,role:u.role||''};
   localStorage.setItem('fam_user',JSON.stringify(ME));
   document.getElementById('auth-page').style.display='none';
   startApp();
@@ -954,12 +973,18 @@ window.closeLb=function(){
   document.getElementById('lightbox').classList.remove('show');
   document.getElementById('lb-content').innerHTML='';
 }
+window.previewImg=function(src){
+  document.getElementById('lb-content').innerHTML='<img src="'+src+'" onclick="closeLb()">';
+  document.getElementById('lightbox').classList.add('show');
+}
 
 // ===== SHEET MODAL =====
-window.showSheet=function(title,sub,body){
+window.showSheet=function(title,sub,body,large){
   document.getElementById('sh-title').textContent=title;
   document.getElementById('sh-sub').textContent=sub||'';
   document.getElementById('sh-body').innerHTML=body||'';
+  document.getElementById('sh-body').style.maxHeight=large?'75vh':'none';
+  document.getElementById('sh-body').style.overflowY=large?'auto':'visible';
   document.getElementById('sheet-ov').classList.add('show');
 }
 window.closeSheet=function(e){
@@ -1023,8 +1048,58 @@ window.showMembers=function(){
   if(!FAM) return;
   var mems=Object.values(FAM.members||{});
   showSheet('家庭成员','共 '+mems.length+' 位成员',
-    mems.map(function(m){return'<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--gray-border)"><div style="width:36px;height:36px;border-radius:50%;background:var(--pink-light);display:flex;align-items:center;justify-content:center;font-size:20px">'+m.avatar+'</div><div style="font-size:15px;font-weight:500">'+esc(m.name)+'</div></div>'}).join('')+
+    mems.map(function(m){
+      var roleLabel=m.role?'<span style="background:var(--pink-light);color:var(--pink);padding:2px 8px;border-radius:10px;font-size:12px;margin-left:8px">'+esc(m.role)+'</span>':'';
+      var isMe=m.name+'__'+ME.familyCode===ME.userId;
+      var btnStyle=isMe?'style="opacity:0.5;pointer-events:none"':'';
+      return'<div style="display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--gray-border);cursor:pointer" onclick="showMemberProfile(\''+esc(m.name)+'\')">'+
+        '<div style="width:44px;height:44px;border-radius:50%;background:var(--pink-light);display:flex;align-items:center;justify-content:center;font-size:24px">'+m.avatar+'</div>'+
+        '<div style="flex:1">'+
+          '<div style="font-size:15px;font-weight:500;display:flex;align-items:center">'+esc(m.name)+roleLabel+(isMe?'<span style="background:var(--green-light);color:var(--green);padding:2px 8px;border-radius:10px;font-size:12px;margin-left:8px">我</span>':'')+'</div>'+
+        '</div>'+
+        '<div style="color:var(--text-hint);font-size:20px">›</div>'+
+      '</div>';
+    }).join('')+
     '<button class="btn-sec" onclick="closeSheet()" style="width:100%;margin-top:12px">关闭</button>'
+  );
+}
+window.showMemberProfile=async function(memberName){
+  closeSheet();
+  var memberId=memberName+'__'+ME.familyCode;
+  var userSnap=await db.ref('users/'+memberId).once('value');
+  if(!userSnap.exists()){toast('找不到该成员');return;}
+  var user=userSnap.val();
+  // 获取该成员的日记和分享
+  var diarySnap=await db.ref('users/'+memberId+'/diary').orderByChild('createdAt').limitToLast(20).once('value');
+  var sharedSnap=await db.ref('families/'+ME.familyCode+'/posts').orderByChild('authorId').equalTo(memberId).limitToLast(20).once('value');
+  var diaryList=[],sharedList=[];
+  if(diarySnap.exists()){
+    diarySnap.forEach(function(s){diaryList.push(Object.assign({id:s.key},s.val()))});
+    diaryList.reverse();
+  }
+  if(sharedSnap.exists()){
+    sharedSnap.forEach(function(s){sharedList.push(Object.assign({id:s.key},s.val()))});
+    sharedList.reverse();
+  }
+  var roleLabel=user.role?'<span style="background:var(--pink-light);color:var(--pink);padding:3px 10px;border-radius:12px;font-size:13px;margin-left:10px">'+esc(user.role)+'</span>':'';
+  var allPosts=diaryList.concat(sharedList);
+  var postsHtml=allPosts.length===0?'<div style="text-align:center;color:var(--text-hint);padding:40px 0">还没有发布内容</div>':
+    allPosts.map(function(p){
+      var imgs='';
+      if(p.images&&p.images.length){
+        imgs='<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:8px">'+p.images.slice(0,3).map(function(img){return'<img src="'+img+'" style="width:60px;height:60px;object-fit:cover;border-radius:6px" onclick="previewImg(\''+img+'\')">;'}).join('')+'</div>';
+      }
+      return'<div style="padding:12px;border-bottom:1px solid var(--gray-border)">'+
+        '<div style="font-size:13px;color:var(--text-sec);margin-bottom:6px">'+(p.shared?'📤 已分享':'📖 私人日记')+' · '+ago(p.createdAt)+'</div>'+
+        '<div style="font-size:15px;line-height:1.5">'+esc(p.text||'')+'</div>'+imgs+
+      '</div>';
+    }).join('');
+  showSheet(
+    '<div style="display:flex;align-items:center;gap:10px">'+user.avatar+' '+esc(user.name)+roleLabel+'</div>',
+    '',
+    '<div style="margin-top:-10px">'+postsHtml+'</div>'+
+    '<button class="btn-sec" onclick="closeSheet()" style="width:100%;margin-top:12px">关闭</button>',
+    true
   );
 }
 </script>
