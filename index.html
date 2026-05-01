@@ -970,9 +970,51 @@ window.closeSheet=function(e){
 window.showFamCode=function(){
   if(!FAM) return;
   showSheet('家庭邀请码','把这个码分享给家人，他们注册时输入就能加入',
-    '<div class="family-code-show" style="margin-bottom:16px"><div class="code">'+FAM.code+'</div><p>长按可复制</p></div>'+
-    '<button class="btn-ok" onclick="cpCode(\''+FAM.code+'\');closeSheet()">复制邀请码</button>'
+    '<div class="family-code-show" style="margin-bottom:12px"><div class="code">'+FAM.code+'</div><p>长按可复制</p></div>'+
+    '<button class="btn-primary" onclick="changeFamCode()">修改家庭码</button>'+
+    '<button class="btn-sec" onclick="cpCode(\''+FAM.code+'\');closeSheet()" style="width:100%;margin-top:10px">复制邀请码</button>'
   );
+}
+window.changeFamCode=function(){
+  closeSheet();
+  setTimeout(function(){
+    showSheet('修改家庭码','输入新的家庭码，家人需要重新用新码加入',
+      '<div style="margin-bottom:16px">'+
+        '<input class="form-input" id="new-code-input" type="text" placeholder="输入新家庭码" maxlength="10" style="text-transform:uppercase;letter-spacing:2px">'+
+        '<div class="form-hint">2-10位字母或数字，如：NANA2026</div>'+
+      '</div>'+
+      '<button class="btn-primary" onclick="doChangeFamCode()" style="width:100%">确认修改</button>'
+    );
+  },300);
+}
+window.doChangeFamCode=async function(){
+  var newCode=document.getElementById('new-code-input').value.trim().toUpperCase();
+  if(!newCode||newCode.length<2){toast('家庭码至少2位');return;}
+  if(!/^[A-Z0-9]+$/.test(newCode)){toast('只能输入字母和数字');return;}
+  if(newCode===ME.familyCode){toast('新码不能和现在一样');return;}
+  var existsnap=await db.ref('families/'+newCode).once('value');
+  if(existsnap.exists()){toast('此家庭码已被使用');return;}
+  // 更新家庭码
+  var oldCode=ME.familyCode;
+  var familyData=(await db.ref('families/'+oldCode).once('value')).val();
+  await db.ref('families/'+newCode).set(Object.assign({},familyData,{code:newCode}));
+  await db.ref('families/'+oldCode).remove();
+  // 更新所有成员的家庭码
+  var memSnap=await db.ref('families/'+newCode+'/members').once('value');
+  if(memSnap.exists()){
+    var mems=memSnap.val();
+    var updates={};
+    for(var uid in mems){
+      updates['users/'+uid+'/familyCode']=newCode;
+      updates['users/'+uid+'/familyCode']=newCode;
+    }
+    await db.ref().update(updates);
+  }
+  ME.familyCode=newCode;
+  localStorage.setItem('fam_user',JSON.stringify(ME));
+  FAM.code=newCode;
+  closeSheet();
+  toast('家庭码已修改为：'+newCode);
 }
 window.cpCode=function(code){
   navigator.clipboard&&navigator.clipboard.writeText(code).then(function(){toast('已复制：'+code)}).catch(function(){toast('家庭码：'+code)});
