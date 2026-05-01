@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="纳纳的家">
+<title>纳纳的家</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
+:root{
+  --pink:#E8756A;--pink-light:#FDEEED;
+  --green:#4CAF82;--green-light:#E8F5EE;
+  --purple:#7B6CF6;--purple-light:#EEEAFF;
+  --gray:#888;--gray-light:#F5F5F5;--gray-border:#EBEBEB;
+  --text:#1A1A1A;--text-sec:#666;--text-hint:#AAA;
+  --white:#FFF;--bg:#FAFAFA;
+  --radius:14px;--radius-sm:8px;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Hiragino Sans GB',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+button{font-family:inherit;cursor:pointer;border:none;outline:none;background:none}
+input,textarea{font-family:inherit;outline:none;border:none;background:none}
+
+/* LOADING */
+#app-loading{position:fixed;inset:0;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;gap:12px}
+.loading-icon{width:64px;height:64px;border-radius:18px;background:linear-gradient(135deg,#FFB5AE,#E8756A);display:flex;align-items:center;justify-content:center;font-size:34px}
+.loading-title{font-size:20px;font-weight:700;color:var(--text)}
+.loading-sub{font-size:14px;color:var(--text-hint)}
+.spinner{width:26px;height:26px;border:3px solid var(--gray-border);border-top-color:var(--pink);border-radius:50%;animation:spin .8s linear infinite;margin-top:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* CONFIG NOTICE */
+#config-notice{display:none;position:fixed;inset:0;background:#fff;z-index:9998;padding:40px 24px;overflow-y:auto}
+.cn-icon{font-size:48px;text-align:center;margin-bottom:16px}
+.cn-title{font-size:20px;font-weight:700;text-align:center;margin-bottom:8px}
+.cn-desc{font-size:14px;color:var(--text-sec);line-height:1.7;margin-bottom:20px;text-align:center}
+.cn-step{background:var(--gray-light);border-radius:12px;padding:16px;margin-bottom:12px}
+.cn-step-num{font-size:11px;font-weight:700;color:var(--pink);margin-bottom:4px}
+.cn-step-title{font-size:14px;font-weight:600;margin-bottom:4px}
+.cn-step-body{font-size:13px;color:var(--text-sec);line-height:1.6}
+.cn-code{background:#F0EDFF;border-radius:8px;padding:10px 12px;font-family:monospace;font-size:12px;color:#5340C9;margin-top:8px;word-break:break-all;line-height:1.6}
+.cn-btn{display:block;width:100%;padding:14px;border-radius:12px;background:linear-gradient(135deg,#FF8F85,#E8756A);color:#fff;font-size:16px;font-weight:600;text-align:center;margin-top:20px;cursor:pointer;border:none}
+
+/* AUTH */
+#auth-page{display:none;min-height:100vh;background:linear-gradient(160deg,#FFF5F4,#F0F7FF);padding:40px 24px 24px}
+.auth-logo{text-align:center;margin-bottom:32px}
+.auth-logo .icon{width:72px;height:72px;border-radius:20px;background:linear-gradient(135deg,#FFB5AE,#E8756A);display:flex;align-items:center;justify-content:center;font-size:36px;margin:0 auto 12px}
+.auth-logo h1{font-size:22px;font-weight:700}
+.auth-logo p{font-size:14px;color:var(--text-sec);margin-top:4px}
+.auth-card{background:#fff;border-radius:20px;padding:24px;box-shadow:0 4px 24px rgba(0,0,0,.07)}
+.auth-tabs{display:flex;margin-bottom:24px;border-radius:10px;background:var(--gray-light);padding:3px}
+.auth-tab{flex:1;padding:8px;border-radius:8px;font-size:14px;font-weight:500;color:var(--text-sec);transition:.2s}
+.auth-tab.active{background:#fff;color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.1)}
+.form-group{margin-bottom:16px}
+.form-label{font-size:12px;color:var(--text-sec);margin-bottom:6px;display:block;font-weight:500}
+.form-input{width:100%;background:var(--gray-light);border-radius:10px;padding:12px 14px;font-size:15px;color:var(--text)}
+.form-hint{font-size:12px;color:var(--text-hint);margin-top:5px}
+.btn-primary{width:100%;padding:14px;border-radius:12px;background:linear-gradient(135deg,#FF8F85,#E8756A);color:#fff;font-size:16px;font-weight:600;margin-top:4px}
+.btn-primary:active{opacity:.85}
+.avatar-picker{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.av-opt{width:42px;height:42px;border-radius:50%;font-size:22px;display:flex;align-items:center;justify-content:center;cursor:pointer;border:2.5px solid transparent;background:var(--gray-light)}
+.av-opt.selected{border-color:var(--pink);background:var(--pink-light)}
+.family-code-show{background:var(--green-light);border-radius:10px;padding:14px;text-align:center;margin-top:12px}
+.family-code-show .code{font-size:26px;font-weight:700;letter-spacing:5px;color:var(--green)}
+.family-code-show p{font-size:12px;color:var(--text-sec);margin-top:4px}
+.join-row{display:flex;gap:8px;margin-top:6px}
+.mode-btn{flex:1;padding:9px 0;border-radius:10px;font-size:14px;font-weight:500;background:var(--gray-light);color:var(--text-sec)}
+.mode-btn.active{background:var(--pink-light);color:var(--pink)}
+
+/* MAIN */
+#main-app{display:none;max-width:480px;margin:0 auto;min-height:100vh;padding-bottom:72px}
+
+/* TOP BAR */
+.top-bar{position:sticky;top:0;z-index:100;background:rgba(250,250,250,.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--gray-border)}
+.top-bar-inner{display:flex;align-items:center;justify-content:space-between;padding:12px 16px}
+.top-bar-title{font-size:17px;font-weight:700}
+.top-bar-right{display:flex;align-items:center;gap:8px}
+.icon-btn{width:36px;height:36px;border-radius:50%;background:var(--gray-light);display:flex;align-items:center;justify-content:center;font-size:17px;cursor:pointer;position:relative}
+.notif-badge{position:absolute;top:-1px;right:-1px;width:9px;height:9px;background:var(--pink);border-radius:50%;border:1.5px solid var(--bg)}
+.avatar-sm{width:34px;height:34px;border-radius:50%;font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer;background:var(--pink-light)}
+
+/* NAV */
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:rgba(255,255,255,.95);backdrop-filter:blur(12px);border-top:1px solid var(--gray-border);display:flex;z-index:100;padding-bottom:env(safe-area-inset-bottom)}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 4px;cursor:pointer}
+.nav-item .ni{font-size:22px}
+.nav-item .nl{font-size:10px;font-weight:500;color:var(--text-hint)}
+.nav-item.active .nl{color:var(--pink)}
+
+/* PAGES */
+.page{display:none}
+.page.active{display:block}
+
+/* FEED */
+.feed-header{padding:16px 16px 8px;display:flex;align-items:center;justify-content:space-between}
+.pg-title{font-size:20px;font-weight:700}
+.pg-sub{font-size:13px;color:var(--text-sec);margin-top:2px}
+
+/* POST CARD */
+.post-card{background:#fff;margin:0 12px 12px;border-radius:var(--radius);overflow:hidden;box-shadow:0 1px 6px rgba(0,0,0,.05)}
+.post-head{display:flex;align-items:center;gap:10px;padding:12px 14px 10px}
+.post-av{width:40px;height:40px;border-radius:50%;font-size:22px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--pink-light)}
+.post-author{font-size:14px;font-weight:600}
+.post-time{font-size:12px;color:var(--text-hint);margin-top:1px}
+.post-body{padding:0 14px 12px}
+.post-text{font-size:15px;line-height:1.65;white-space:pre-wrap;word-break:break-word}
+.media-grid{display:grid;gap:3px;margin:8px 0;border-radius:8px;overflow:hidden}
+.media-grid.n1{grid-template-columns:1fr}
+.media-grid.n2{grid-template-columns:1fr 1fr}
+.media-grid.n3{grid-template-columns:1fr 1fr 1fr}
+.media-grid.n4{grid-template-columns:1fr 1fr}
+.media-item{position:relative;overflow:hidden;background:#EEE;aspect-ratio:1;cursor:pointer}
+.media-item img,.media-item video{width:100%;height:100%;object-fit:cover;display:block}
+.vplay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.25);pointer-events:none}
+.vplay-icon{width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.9);display:flex;align-items:center;justify-content:center;font-size:18px}
+.post-actions{display:flex;border-top:1px solid var(--gray-border)}
+.pact{flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:10px 0;font-size:13px;color:var(--text-sec);cursor:pointer}
+.pact:active{background:var(--gray-light)}
+.pact.liked{color:var(--pink)}
+.pact-sep{width:1px;height:28px;background:var(--gray-border)}
+
+/* COMMENTS */
+.comments-wrap{border-top:1px solid var(--gray-border);padding:10px 14px}
+.cmt-item{display:flex;gap:8px;margin-bottom:10px}
+.cmt-av{width:28px;height:28px;border-radius:50%;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--gray-light)}
+.cmt-body{flex:1}
+.cmt-name{font-size:12px;font-weight:600;color:var(--text-sec)}
+.cmt-text{font-size:14px;line-height:1.5;word-break:break-word;margin-top:2px}
+.cmt-time{font-size:11px;color:var(--text-hint);margin-top:3px}
+.cmt-input-row{display:flex;gap:8px;align-items:center;margin-top:6px}
+.cmt-input{flex:1;background:var(--gray-light);border-radius:20px;padding:8px 14px;font-size:14px}
+.btn-send{background:var(--pink);color:#fff;border-radius:20px;padding:7px 14px;font-size:13px;font-weight:600;flex-shrink:0}
+
+/* DIARY */
+.diary-list{padding:12px}
+.diary-item{background:#fff;border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;box-shadow:0 1px 6px rgba(0,0,0,.04);cursor:pointer}
+.diary-item:active{opacity:.85}
+.di-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:5px}
+.di-date{font-size:12px;color:var(--text-hint);font-weight:500}
+.di-badges{display:flex;gap:4px}
+.badge{font-size:10px;padding:2px 7px;border-radius:10px;font-weight:500}
+.badge-private{background:var(--gray-light);color:var(--gray)}
+.badge-shared{background:var(--green-light);color:var(--green)}
+.badge-media{background:var(--purple-light);color:var(--purple)}
+.di-title{font-size:15px;font-weight:600;margin-bottom:3px}
+.di-preview{font-size:13px;color:var(--text-sec);line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.di-thumbs{display:flex;gap:4px;margin-top:8px}
+.di-thumb{width:54px;height:54px;border-radius:6px;object-fit:cover}
+
+/* COMPOSE */
+.compose-wrap{position:fixed;inset:0;z-index:200;display:none;flex-direction:column;background:var(--bg)}
+.compose-wrap.show{display:flex}
+.compose-top{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:#fff;border-bottom:1px solid var(--gray-border)}
+.compose-heading{font-size:17px;font-weight:700}
+.compose-actions{display:flex;gap:8px;align-items:center}
+.btn-close{width:30px;height:30px;border-radius:50%;background:var(--gray-light);display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--text-sec)}
+.btn-post{background:var(--pink);color:#fff;border-radius:20px;padding:7px 18px;font-size:14px;font-weight:600}
+.btn-post:disabled{opacity:.6}
+.compose-body{flex:1;overflow-y:auto;padding:16px}
+.compose-ta{width:100%;min-height:160px;font-size:16px;line-height:1.7;color:var(--text);resize:none;display:block;margin-bottom:12px}
+.compose-ta::placeholder{color:var(--text-hint)}
+.media-prev-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.mprev-item{position:relative;width:82px;height:82px;border-radius:8px;overflow:hidden;background:#EEE;flex-shrink:0}
+.mprev-item img,.mprev-item video{width:100%;height:100%;object-fit:cover}
+.mprev-del{position:absolute;top:3px;right:3px;width:20px;height:20px;background:rgba(0,0,0,.6);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;cursor:pointer}
+.compose-foot{padding:12px 16px;background:#fff;border-top:1px solid var(--gray-border)}
+.toolbar{display:flex;align-items:center;gap:6px;margin-bottom:10px}
+.tool-btn{display:flex;align-items:center;gap:5px;padding:7px 12px;border-radius:20px;background:var(--gray-light);font-size:13px;color:var(--text-sec);font-weight:500}
+.share-row{display:flex;align-items:center;justify-content:space-between}
+.share-label{font-size:14px;color:var(--text-sec)}
+.toggle-wrap{position:relative;width:44px;height:24px;flex-shrink:0}
+.toggle-wrap input{opacity:0;width:0;height:0;position:absolute}
+.toggle-track{position:absolute;inset:0;background:#CCC;border-radius:12px;cursor:pointer;transition:.2s}
+.toggle-track::before{content:'';position:absolute;width:20px;height:20px;background:#fff;border-radius:50%;top:2px;left:2px;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+input:checked+.toggle-track{background:var(--green)}
+input:checked+.toggle-track::before{transform:translateX(20px)}
+
+/* PROFILE */
+.profile-hero{background:linear-gradient(160deg,#FFF5F4,#F0F7FF);padding:28px 20px 20px;display:flex;flex-direction:column;align-items:center}
+.prof-av{width:76px;height:76px;border-radius:50%;font-size:42px;display:flex;align-items:center;justify-content:center;margin-bottom:10px;background:var(--pink-light)}
+.prof-name{font-size:18px;font-weight:700}
+.prof-role{font-size:13px;color:var(--text-sec);margin-top:3px}
+.stats-row{display:flex;gap:24px;margin-top:16px}
+.stat-item{text-align:center}
+.stat-num{font-size:22px;font-weight:700}
+.stat-lbl{font-size:11px;color:var(--text-hint);margin-top:2px}
+.menu-sec{padding:16px}
+.menu-grp{background:#fff;border-radius:var(--radius);overflow:hidden;margin-bottom:12px;box-shadow:0 1px 6px rgba(0,0,0,.04)}
+.menu-item{display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;border-bottom:1px solid var(--gray-border)}
+.menu-item:last-child{border-bottom:none}
+.menu-item:active{background:var(--gray-light)}
+.mi-icon{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.mi-text{flex:1}
+.mi-title{font-size:15px;font-weight:500}
+.mi-sub{font-size:12px;color:var(--text-hint);margin-top:2px}
+.mi-arr{color:var(--text-hint);font-size:15px}
+.fam-card{background:linear-gradient(135deg,#E8F5EE,#D4EDDF);border-radius:var(--radius);padding:16px;margin:0 16px 12px;display:flex;align-items:center;gap:12px}
+.fam-card-icon{width:46px;height:46px;border-radius:12px;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0}
+.fam-card-code{font-size:14px;color:#3B6D11;font-weight:600;letter-spacing:3px;margin-top:3px}
+.fam-members{display:flex;margin-top:6px}
+.mem-av{width:24px;height:24px;border-radius:50%;font-size:12px;display:flex;align-items:center;justify-content:center;border:2px solid #fff;margin-right:-6px;background:var(--pink-light)}
+
+/* NOTIF */
+.notif-page{padding:16px}
+.notif-item{display:flex;gap:10px;background:#fff;border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:8px;box-shadow:0 1px 4px rgba(0,0,0,.04);cursor:pointer}
+.notif-item:active{opacity:.85}
+.notif-av{width:36px;height:36px;border-radius:50%;font-size:20px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--pink-light)}
+.notif-content{flex:1}
+.notif-text{font-size:14px;line-height:1.5}
+.notif-time{font-size:11px;color:var(--text-hint);margin-top:4px}
+.notif-dot{width:8px;height:8px;border-radius:50%;background:var(--pink);flex-shrink:0;margin-top:5px}
+
+/* FAB */
+.fab{position:fixed;bottom:82px;right:20px;width:54px;height:54px;border-radius:50%;background:linear-gradient(135deg,#FF8F85,#E8756A);color:#fff;font-size:28px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 18px rgba(232,117,106,.45);z-index:99;cursor:pointer}
+.fab:active{transform:scale(.92)}
+
+/* LIGHTBOX */
+.lightbox{position:fixed;inset:0;background:rgba(0,0,0,.93);z-index:500;display:none;align-items:center;justify-content:center}
+.lightbox.show{display:flex}
+.lightbox img,.lightbox video{max-width:96%;max-height:90vh;border-radius:8px}
+.lb-close{position:absolute;top:16px;right:16px;width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.15);color:#fff;font-size:20px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+
+/* MODAL / SHEET */
+.sheet-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;display:none;align-items:flex-end;justify-content:center}
+.sheet-overlay.show{display:flex}
+.sheet{background:#fff;border-radius:20px 20px 0 0;padding:20px 20px 40px;width:100%;max-width:480px;animation:slideUp .22s ease}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.sheet-title{font-size:17px;font-weight:700;margin-bottom:4px}
+.sheet-sub{font-size:13px;color:var(--text-sec);margin-bottom:16px}
+.sheet-inp{width:100%;background:var(--gray-light);border-radius:10px;padding:12px 14px;font-size:15px;color:var(--text);margin-bottom:12px}
+.btn-row{display:flex;gap:8px;margin-top:8px}
+.btn-sec{flex:1;padding:13px;border-radius:12px;background:var(--gray-light);color:var(--text-sec);font-size:15px;font-weight:500}
+.btn-ok{flex:1;padding:13px;border-radius:12px;background:linear-gradient(135deg,#FF8F85,#E8756A);color:#fff;font-size:15px;font-weight:600}
+
+/* EMPTY */
+.empty{text-align:center;padding:60px 20px}
+.empty-ico{font-size:54px;margin-bottom:14px}
+.empty-t{font-size:17px;font-weight:600;margin-bottom:6px}
+.empty-s{font-size:14px;color:var(--text-sec);line-height:1.6}
+
+.hidden{display:none!important}
+.toast{position:fixed;top:64px;left:50%;transform:translateX(-50%);background:rgba(25,25,25,.88);color:#fff;padding:9px 20px;border-radius:20px;font-size:14px;z-index:1000;pointer-events:none;opacity:0;transition:opacity .2s;white-space:nowrap}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+
+<!-- Loading -->
+<div id="app-loading">
+  <div class="loading-icon">🏡</div>
+  <div class="loading-title">纳纳的家</div>
+  <div class="loading-sub">记录每一个温暖瞬间</div>
+  <div class="spinner"></div>
+</div>
+
+<!-- Config notice (shown if Firebase not configured) -->
+<div id="config-notice">
+  <div class="cn-icon">⚙️</div>
+  <div class="cn-title">需要配置 Firebase</div>
+  <div class="cn-desc">应用需要连接 Firebase 才能运行。<br>按以下步骤配置，只需一次。</div>
+  <div class="cn-step">
+    <div class="cn-step-num">第 1 步</div>
+    <div class="cn-step-title">进入 Firebase 控制台</div>
+    <div class="cn-step-body">打开 <strong>console.firebase.google.com</strong>，创建新项目（或使用孕期工具的项目）</div>
+  </div>
+  <div class="cn-step">
+    <div class="cn-step-num">第 2 步</div>
+    <div class="cn-step-title">启用 Realtime Database 和 Storage</div>
+    <div class="cn-step-body">在左侧菜单依次开启 Realtime Database（选亚洲节点）和 Storage，规则均设为测试模式</div>
+  </div>
+  <div class="cn-step">
+    <div class="cn-step-num">第 3 步</div>
+    <div class="cn-step-title">获取配置并填入文件</div>
+    <div class="cn-step-body">项目设置 → 你的应用 → 复制 firebaseConfig，替换本文件底部 &lt;script&gt; 里的占位内容：</div>
+    <div class="cn-code">const FIREBASE_CONFIG = {<br>&nbsp;&nbsp;apiKey: "YOUR_API_KEY",<br>&nbsp;&nbsp;databaseURL: "...",<br>&nbsp;&nbsp;storageBucket: "...",<br>&nbsp;&nbsp;...<br>};</div>
+  </div>
+  <button class="cn-btn" onclick="document.getElementById('config-notice').style.display='none'">我已配置，继续</button>
+</div>
+
+<!-- Auth -->
+<div id="auth-page">
+  <div class="auth-logo">
+    <div class="icon">🏡</div>
+    <h1>纳纳的家</h1>
+    <p>记录每一个温暖瞬间</p>
+  </div>
+  <div class="auth-card">
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchAuthTab('login')">登录</button>
+      <button class="auth-tab" onclick="switchAuthTab('register')">注册</button>
+    </div>
+
+    <!-- Login -->
+    <div id="login-form">
+      <div class="form-group">
+        <label class="form-label">昵称</label>
+        <input class="form-input" id="ln" type="text" placeholder="输入你的昵称">
+      </div>
+      <div class="form-group">
+        <label class="form-label">密码</label>
+        <input class="form-input" id="lp" type="password" placeholder="输入密码">
+      </div>
+      <div class="form-group">
+        <label class="form-label">家庭码</label>
+        <input class="form-input" id="lc" type="text" placeholder="输入6位家庭码" maxlength="6" style="text-transform:uppercase;letter-spacing:3px">
+        <div class="form-hint">注册时会生成家庭码，家人之间共用同一个</div>
+      </div>
+      <button class="btn-primary" onclick="doLogin()">进入纳纳的家</button>
+    </div>
+
+    <!-- Register -->
+    <div id="register-form" class="hidden">
+      <div class="form-group">
+        <label class="form-label">我的昵称</label>
+        <input class="form-input" id="rn" type="text" placeholder="比如：妈妈、小明、爸爸">
+      </div>
+      <div class="form-group">
+        <label class="form-label">选个头像</label>
+        <div class="avatar-picker" id="av-picker">
+          <div class="av-opt selected" data-av="👩" onclick="pickAv(this)">👩</div>
+          <div class="av-opt" data-av="👨" onclick="pickAv(this)">👨</div>
+          <div class="av-opt" data-av="👧" onclick="pickAv(this)">👧</div>
+          <div class="av-opt" data-av="👦" onclick="pickAv(this)">👦</div>
+          <div class="av-opt" data-av="👴" onclick="pickAv(this)">👴</div>
+          <div class="av-opt" data-av="👵" onclick="pickAv(this)">👵</div>
+          <div class="av-opt" data-av="🐱" onclick="pickAv(this)">🐱</div>
+          <div class="av-opt" data-av="🐶" onclick="pickAv(this)">🐶</div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">密码</label>
+        <input class="form-input" id="rp" type="password" placeholder="设置密码（至少4位）">
+      </div>
+      <div class="form-group">
+        <label class="form-label">家庭</label>
+        <div class="join-row">
+          <button class="mode-btn active" id="mb-create" onclick="setFamMode('create')">创建新家庭</button>
+          <button class="mode-btn" id="mb-join" onclick="setFamMode('join')">加入已有家庭</button>
+        </div>
+        <div id="join-code-wrap" class="hidden" style="margin-top:10px">
+          <input class="form-input" id="rc" type="text" placeholder="输入家庭码" maxlength="6" style="text-transform:uppercase;letter-spacing:3px">
+        </div>
+        <div id="fam-code-result"></div>
+      </div>
+      <button class="btn-primary" onclick="doRegister()">创建账号</button>
+    </div>
+  </div>
+</div>
+
+<!-- Main App -->
+<div id="main-app">
+  <div class="top-bar">
+    <div class="top-bar-inner">
+      <div class="top-bar-title" id="tbar-title">纳纳的家</div>
+      <div class="top-bar-right">
+        <div class="icon-btn" onclick="switchPage('notif')">🔔<span id="notif-badge" class="notif-badge hidden"></span></div>
+        <div class="avatar-sm" id="top-av" onclick="switchPage('profile')"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="page-feed" class="page active">
+    <div class="feed-header">
+      <div>
+        <div class="pg-title">家庭广场</div>
+        <div class="pg-sub" id="fam-sub">和家人分享生活点滴</div>
+      </div>
+    </div>
+    <div id="feed-list">
+      <div class="empty"><div class="empty-ico">🏡</div><div class="empty-t">家庭动态还是空的</div><div class="empty-s">点击右下角 + 分享第一条动态</div></div>
+    </div>
+  </div>
+
+  <div id="page-diary" class="page">
+    <div class="feed-header"><div class="pg-title">我的日记</div><div class="pg-sub">属于自己的私密空间</div></div>
+    <div class="diary-list" id="diary-list">
+      <div class="empty"><div class="empty-ico">📖</div><div class="empty-t">还没有日记</div><div class="empty-s">点击右下角 + 开始记录今天的故事</div></div>
+    </div>
+  </div>
+
+  <div id="page-notif" class="page">
+    <div class="feed-header"><div class="pg-title">消息通知</div></div>
+    <div class="notif-page" id="notif-list">
+      <div class="empty"><div class="empty-ico">🔔</div><div class="empty-t">暂无通知</div><div class="empty-s">有家人评论或点赞时会通知你</div></div>
+    </div>
+  </div>
+
+  <div id="page-profile" class="page">
+    <div class="profile-hero">
+      <div class="prof-av" id="prof-av"></div>
+      <div class="prof-name" id="prof-name"></div>
+      <div class="prof-role" id="prof-role"></div>
+      <div class="stats-row">
+        <div class="stat-item"><div class="stat-num" id="st-diary">0</div><div class="stat-lbl">日记</div></div>
+        <div class="stat-item"><div class="stat-num" id="st-shared">0</div><div class="stat-lbl">已分享</div></div>
+        <div class="stat-item"><div class="stat-num" id="st-mem">0</div><div class="stat-lbl">家庭成员</div></div>
+      </div>
+    </div>
+    <div id="fam-card-wrap"></div>
+    <div class="menu-sec">
+      <div class="menu-grp">
+        <div class="menu-item" onclick="showFamCode()">
+          <div class="mi-icon" style="background:var(--green-light)">🏠</div>
+          <div class="mi-text"><div class="mi-title">家庭邀请码</div><div class="mi-sub">分享给家人邀请加入</div></div>
+          <div class="mi-arr">›</div>
+        </div>
+        <div class="menu-item" onclick="showMembers()">
+          <div class="mi-icon" style="background:var(--purple-light)">👨‍👩‍👧</div>
+          <div class="mi-text"><div class="mi-title">家庭成员</div><div class="mi-sub" id="mem-sub">查看所有成员</div></div>
+          <div class="mi-arr">›</div>
+        </div>
+      </div>
+      <div class="menu-grp">
+        <div class="menu-item" onclick="doLogout()">
+          <div class="mi-icon" style="background:#FEF0F0">🚪</div>
+          <div class="mi-text"><div class="mi-title" style="color:#E24B4A">退出登录</div></div>
+          <div class="mi-arr">›</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom-nav">
+    <div class="nav-item active" id="nav-feed" onclick="switchPage('feed')"><span class="ni">🏠</span><span class="nl">家庭</span></div>
+    <div class="nav-item" id="nav-diary" onclick="switchPage('diary')"><span class="ni">📖</span><span class="nl">日记</span></div>
+    <div class="nav-item" id="nav-notif" onclick="switchPage('notif')"><span class="ni">🔔</span><span class="nl">消息</span></div>
+    <div class="nav-item" id="nav-profile" onclick="switchPage('profile')"><span class="ni">👤</span><span class="nl">我的</span></div>
+  </div>
+
+  <button class="fab" onclick="openCompose()">＋</button>
+</div>
+
+<!-- Compose -->
+<div class="compose-wrap" id="compose-wrap">
+  <div class="compose-top">
+    <div class="compose-heading">写点什么</div>
+    <div class="compose-actions">
+      <button class="btn-close" onclick="closeCompose()">✕</button>
+      <button class="btn-post" id="post-btn" onclick="doPost()">发布</button>
+    </div>
+  </div>
+  <div class="compose-body">
+    <textarea class="compose-ta" id="compose-ta" placeholder="今天发生了什么…写下你的故事吧"></textarea>
+    <div class="media-prev-row" id="media-prev"></div>
+  </div>
+  <div class="compose-foot">
+    <div class="toolbar">
+      <button class="tool-btn" onclick="pickImg()">📷 照片</button>
+      <button class="tool-btn" onclick="pickVid()">🎬 视频</button>
+    </div>
+    <div class="share-row">
+      <span class="share-label">🏠 分享到家庭广场</span>
+      <label class="toggle-wrap">
+        <input type="checkbox" id="share-toggle" checked>
+        <span class="toggle-track"></span>
+      </label>
+    </div>
+  </div>
+  <input type="file" id="img-picker" accept="image/*" multiple style="display:none" onchange="onImgPick(event)">
+  <input type="file" id="vid-picker" accept="video/*" style="display:none" onchange="onVidPick(event)">
+</div>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox" onclick="closeLb()">
+  <div class="lb-close" onclick="closeLb()">✕</div>
+  <div id="lb-content"></div>
+</div>
+
+<!-- Sheet modal -->
+<div class="sheet-overlay" id="sheet-ov" onclick="closeSheet(event)">
+  <div class="sheet" id="sheet">
+    <div class="sheet-title" id="sh-title"></div>
+    <div class="sheet-sub" id="sh-sub"></div>
+    <div id="sh-body"></div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== CONFIG =====
+// 填入你的 Firebase 配置
+var FIREBASE_CONFIG = {
+  apiKey: "AIzaSyCd9YKlAk6emTfD5wSfznoldbV6Q2eAXGw",
+  authDomain: "pregnancy-tracker-303d7.firebaseapp.com",
+  databaseURL: "https://pregnancy-tracker-303d7-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "pregnancy-tracker-303d7",
+  storageBucket: "pregnancy-tracker-303d7.firebasestorage.app",
+  messagingSenderId: "977690431595",
+  appId: "1:977690431595:web:16753821198c47d05ae12e",
+  measurementId: "G-2XB930SS83"
+};
+// ================
+
+var db, storage, storageRef;
+var ME = null;
+var FAM = null;
+var pendingMedia = [];
+
+// utils
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+function genCode(){
+  var c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789',r='';
+  for(var i=0;i<6;i++) r+=c[Math.floor(Math.random()*c.length)];
+  return r;
+}
+function ago(ts){
+  if(!ts) return '';
+  var d=Date.now()-ts;
+  if(d<60000) return '刚刚';
+  if(d<3600000) return Math.floor(d/60000)+'分钟前';
+  if(d<86400000) return Math.floor(d/3600000)+'小时前';
+  return Math.floor(d/86400000)+'天前';
+}
+function fmtDate(ts){
+  if(!ts) return '';
+  return new Date(ts).toLocaleDateString('zh-CN',{year:'numeric',month:'long',day:'numeric'});
+}
+function esc(s){
+  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+window.toast = function(msg,ms){
+  var el=document.getElementById('toast');
+  el.textContent=msg; el.classList.add('show');
+  clearTimeout(el._t);
+  el._t=setTimeout(function(){el.classList.remove('show')},ms||2200);
+}
+
+// ===== BOOT =====
+window.addEventListener('DOMContentLoaded', function(){
+  var cfg = FIREBASE_CONFIG;
+  if(!cfg.apiKey || cfg.apiKey==='YOUR_API_KEY'){
+    document.getElementById('app-loading').style.display='none';
+    document.getElementById('config-notice').style.display='block';
+    return;
+  }
+  loadFirebase(cfg);
+});
+
+function loadFirebase(cfg){
+  var s1=document.createElement('script');
+  s1.src='https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js';
+  s1.onload=function(){
+    var s2=document.createElement('script');
+    s2.src='https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js';
+    s2.onload=function(){
+      var s3=document.createElement('script');
+      s3.src='https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js';
+      s3.onload=function(){
+        var app=firebase.initializeApp(cfg);
+        db=firebase.database();
+        storage=firebase.storage();
+        bootApp();
+      };
+      document.head.appendChild(s3);
+    };
+    document.head.appendChild(s2);
+  };
+  s1.onerror=function(){
+    document.getElementById('app-loading').style.display='none';
+    document.getElementById('config-notice').style.display='block';
+  };
+  document.head.appendChild(s1);
+}
+
+async function bootApp(){
+  await new Promise(function(r){setTimeout(r,400)});
+  var saved=localStorage.getItem('fam_user');
+  if(saved){
+    ME=JSON.parse(saved);
+    await startApp();
+  } else {
+    document.getElementById('auth-page').style.display='block';
+  }
+  document.getElementById('app-loading').style.display='none';
+}
+
+// ===== AUTH =====
+window.switchAuthTab=function(t){
+  document.querySelectorAll('.auth-tab').forEach(function(el,i){el.classList.toggle('active',i===(t==='login'?0:1))});
+  document.getElementById('login-form').classList.toggle('hidden',t!=='login');
+  document.getElementById('register-form').classList.toggle('hidden',t!=='register');
+}
+var selAv='👩';
+window.pickAv=function(el){
+  document.querySelectorAll('.av-opt').forEach(function(e){e.classList.remove('selected')});
+  el.classList.add('selected'); selAv=el.dataset.av;
+}
+var famMode='create';
+window.setFamMode=function(m){
+  famMode=m;
+  document.getElementById('mb-create').classList.toggle('active',m==='create');
+  document.getElementById('mb-join').classList.toggle('active',m==='join');
+  document.getElementById('join-code-wrap').classList.toggle('hidden',m!=='join');
+}
+
+window.doRegister=async function(){
+  var name=document.getElementById('rn').value.trim();
+  var pwd=document.getElementById('rp').value;
+  if(!name||!pwd){toast('昵称和密码不能为空');return;}
+  if(pwd.length<4){toast('密码至少4位');return;}
+
+  var famCode='';
+  if(famMode==='create'){
+    famCode=genCode();
+  } else {
+    famCode=document.getElementById('rc').value.trim().toUpperCase();
+    if(!famCode){toast('请输入家庭码');return;}
+    var fsnap=await db.ref('families/'+famCode).once('value');
+    if(!fsnap.exists()){toast('家庭码不存在');return;}
+  }
+
+  var usnap=await db.ref('families/'+famCode+'/members').once('value');
+  if(usnap.exists()){
+    var mems=usnap.val();
+    var names=Object.values(mems).map(function(m){return m.name});
+    if(names.indexOf(name)>-1){toast('此家庭中昵称已存在，换一个吧');return;}
+  }
+
+  var userId=name+'__'+famCode;
+  var udata={name:name,avatar:selAv,familyCode:famCode};
+  await db.ref('users/'+userId).set(Object.assign({},udata,{pwd:pwd,createdAt:Date.now()}));
+
+  if(famMode==='create'){
+    await db.ref('families/'+famCode).set({code:famCode,name:name+'的家庭',createdAt:Date.now(),members:{}});
+  }
+  await db.ref('families/'+famCode+'/members/'+userId).set({name:name,avatar:selAv,joinedAt:Date.now()});
+
+  ME=Object.assign({userId:userId},udata);
+  localStorage.setItem('fam_user',JSON.stringify(ME));
+
+  if(famMode==='create'){
+    document.getElementById('fam-code-result').innerHTML='<div class="family-code-show"><div class="code">'+famCode+'</div><p>这是你家的家庭码，分享给家人吧</p></div>';
+    setTimeout(function(){startApp();document.getElementById('auth-page').style.display='none'},2000);
+  } else {
+    toast('加入成功！');
+    setTimeout(function(){document.getElementById('auth-page').style.display='none';startApp()},600);
+  }
+}
+
+window.doLogin=async function(){
+  var name=document.getElementById('ln').value.trim();
+  var pwd=document.getElementById('lp').value;
+  var code=document.getElementById('lc').value.trim().toUpperCase();
+  if(!name||!pwd||!code){toast('请填写完整信息');return;}
+  var userId=name+'__'+code;
+  var snap=await db.ref('users/'+userId).once('value');
+  if(!snap.exists()){toast('账号不存在，请先注册');return;}
+  var u=snap.val();
+  if(u.pwd!==pwd){toast('密码错误');return;}
+  ME={userId:userId,name:u.name,avatar:u.avatar,familyCode:u.familyCode};
+  localStorage.setItem('fam_user',JSON.stringify(ME));
+  document.getElementById('auth-page').style.display='none';
+  startApp();
+}
+
+window.doLogout=function(){
+  localStorage.removeItem('fam_user');
+  ME=null;FAM=null;
+  document.getElementById('main-app').style.display='none';
+  document.getElementById('auth-page').style.display='block';
+  // reset login form
+  ['ln','lp','lc'].forEach(function(id){document.getElementById(id).value=''});
+  toast('已退出');
+}
+
+// ===== START APP =====
+async function startApp(){
+  document.getElementById('main-app').style.display='block';
+  document.getElementById('top-av').textContent=ME.avatar;
+
+  var fsnap=await db.ref('families/'+ME.familyCode).once('value');
+  if(fsnap.exists()){
+    FAM=fsnap.val();
+    var mems=Object.values(FAM.members||{});
+    document.getElementById('fam-sub').textContent=FAM.name+' · '+mems.length+'人';
+    document.getElementById('st-mem').textContent=mems.length;
+    document.getElementById('mem-sub').textContent='共'+mems.length+'位成员';
+    document.getElementById('prof-av').textContent=ME.avatar;
+    document.getElementById('prof-name').textContent=ME.name;
+    document.getElementById('prof-role').textContent=FAM.name+'的成员';
+
+    var avHtml=mems.map(function(m){return'<div class="mem-av">'+m.avatar+'</div>'}).join('');
+    document.getElementById('fam-card-wrap').innerHTML='<div class="fam-card"><div class="fam-card-icon">🏡</div><div><div style="font-size:15px;font-weight:600;color:#1A3A2A">'+FAM.name+'</div><div class="fam-card-code">'+FAM.code+'</div><div class="fam-members">'+avHtml+'</div></div></div>';
+  }
+
+  listenFeed();
+  listenDiary();
+  listenNotifs();
+}
+
+// ===== FEED =====
+function listenFeed(){
+  db.ref('families/'+ME.familyCode+'/posts').orderByChild('createdAt').limitToLast(30)
+    .on('value',function(snap){
+      var posts=[];
+      if(snap.exists()) snap.forEach(function(c){posts.push(Object.assign({id:c.key},c.val()))});
+      posts.reverse();
+      renderFeed(posts);
+    });
+}
+
+function renderFeed(posts){
+  var el=document.getElementById('feed-list');
+  if(!posts.length){
+    el.innerHTML='<div class="empty"><div class="empty-ico">🏡</div><div class="empty-t">家庭动态还是空的</div><div class="empty-s">点击右下角 + 分享第一条动态</div></div>';
+    return;
+  }
+  el.innerHTML=posts.map(postHtml).join('');
+}
+
+function postHtml(p){
+  var mc=p.media?p.media.length:0;
+  var mg=mc===0?'':mc===1?'n1':mc===2?'n2':mc<=3?'n3':'n4';
+  var mh=mc?'<div class="media-grid '+mg+'">'+p.media.map(function(m){
+    if(m.type==='image') return '<div class="media-item" onclick="openLb(\'img\',\''+m.url+'\')"><img src="'+m.url+'" loading="lazy"></div>';
+    return '<div class="media-item" onclick="openLb(\'video\',\''+m.url+'\')"><video src="'+m.url+'" preload="none" muted playsinline></video><div class="vplay"><div class="vplay-icon">▶</div></div></div>';
+  }).join('')+'</div>':'';
+
+  var liked=p.likes&&p.likes[ME.userId];
+  var lc=p.likes?Object.keys(p.likes).length:0;
+  var cc=p.comments?Object.keys(p.comments).length:0;
+
+  var cmts=p.comments?Object.values(p.comments).slice(-3).map(function(c){
+    return '<div class="cmt-item"><div class="cmt-av">'+(c.avatar||'🙂')+'</div><div class="cmt-body"><div class="cmt-name">'+esc(c.author)+'</div><div class="cmt-text">'+esc(c.text)+'</div><div class="cmt-time">'+ago(c.createdAt)+'</div></div></div>';
+  }).join(''):'';
+
+  return '<div class="post-card" id="pc-'+p.id+'">'+
+    '<div class="post-head"><div class="post-av">'+p.avatar+'</div><div><div class="post-author">'+esc(p.author)+'</div><div class="post-time">'+ago(p.createdAt)+'</div></div></div>'+
+    '<div class="post-body">'+(p.text?'<div class="post-text">'+esc(p.text)+'</div>':'')+mh+'</div>'+
+    '<div class="post-actions">'+
+      '<div class="pact'+(liked?' liked':'')+'" onclick="doLike(\''+p.id+'\',\''+p.authorId+'\')">'+( liked?'❤️':'🤍')+' '+(lc||'')+'</div>'+
+      '<div class="pact-sep"></div>'+
+      '<div class="pact" onclick="togCmt(\''+p.id+'\')">💬 '+(cc||'')+'</div>'+
+    '</div>'+
+    '<div class="comments-wrap" id="cw-'+p.id+'" style="display:none">'+
+      '<div id="cl-'+p.id+'">'+cmts+'</div>'+
+      '<div class="cmt-input-row">'+
+        '<div class="cmt-av">'+ME.avatar+'</div>'+
+        '<input class="cmt-input" id="ci-'+p.id+'" placeholder="写评论…" onkeydown="if(event.key===\'Enter\')doComment(\''+p.id+'\',\''+p.authorId+'\')">'+
+        '<button class="btn-send" onclick="doComment(\''+p.id+'\',\''+p.authorId+'\')">发送</button>'+
+      '</div>'+
+    '</div>'+
+  '</div>';
+}
+
+window.doLike=async function(pid,authorId){
+  var r=db.ref('families/'+ME.familyCode+'/posts/'+pid+'/likes/'+ME.userId);
+  var s=await r.once('value');
+  if(s.exists()){
+    await r.remove();
+  } else {
+    await r.set({name:ME.name,avatar:ME.avatar,t:Date.now()});
+    if(authorId!==ME.userId) addNotif(authorId,ME.avatar+' '+ME.name+' 赞了你的动态',pid);
+  }
+}
+
+window.togCmt=function(pid){
+  var el=document.getElementById('cw-'+pid);
+  var show=el.style.display==='none';
+  el.style.display=show?'block':'none';
+  if(show) document.getElementById('ci-'+pid).focus();
+}
+
+window.doComment=async function(pid,authorId){
+  var inp=document.getElementById('ci-'+pid);
+  var txt=inp.value.trim();
+  if(!txt) return;
+  inp.value='';
+  await db.ref('families/'+ME.familyCode+'/posts/'+pid+'/comments').push({
+    text:txt,author:ME.name,avatar:ME.avatar,authorId:ME.userId,createdAt:Date.now()
+  });
+  if(authorId!==ME.userId) addNotif(authorId,ME.avatar+' '+ME.name+' 评论了你："'+txt.slice(0,20)+(txt.length>20?'…':'')+'"',pid);
+}
+
+// ===== DIARY =====
+function listenDiary(){
+  db.ref('users/'+ME.userId+'/diary').on('value',function(snap){
+    var entries=[];
+    if(snap.exists()) snap.forEach(function(c){entries.push(Object.assign({id:c.key},c.val()))});
+    entries.sort(function(a,b){return b.createdAt-a.createdAt});
+    renderDiary(entries);
+    document.getElementById('st-diary').textContent=entries.length;
+    document.getElementById('st-shared').textContent=entries.filter(function(e){return e.shared}).length;
+  });
+}
+
+function renderDiary(entries){
+  var el=document.getElementById('diary-list');
+  if(!entries.length){
+    el.innerHTML='<div class="empty"><div class="empty-ico">📖</div><div class="empty-t">还没有日记</div><div class="empty-s">点击右下角 + 开始记录今天的故事</div></div>';
+    return;
+  }
+  el.innerHTML=entries.map(function(e){
+    var mc=e.media?e.media.length:0;
+    var th=mc?'<div class="di-thumbs">'+e.media.slice(0,4).map(function(m){return'<img class="di-thumb" src="'+m.url+'" loading="lazy">'}).join('')+'</div>':'';
+    return '<div class="diary-item">'+
+      '<div class="di-header"><div class="di-date">'+fmtDate(e.createdAt)+'</div>'+
+      '<div class="di-badges">'+(e.shared?'<span class="badge badge-shared">已分享</span>':'<span class="badge badge-private">私密</span>')+(mc?'<span class="badge badge-media">'+mc+'张</span>':'')+'</div></div>'+
+      '<div class="di-title">'+esc(e.title||'无标题')+'</div>'+
+      (e.text?'<div class="di-preview">'+esc(e.text)+'</div>':'')+
+      th+'</div>';
+  }).join('');
+}
+
+// ===== NOTIF =====
+async function addNotif(targetId,text,pid){
+  await db.ref('users/'+targetId+'/notifications').push({text:text,pid:pid,read:false,createdAt:Date.now()});
+}
+
+function listenNotifs(){
+  db.ref('users/'+ME.userId+'/notifications').on('value',function(snap){
+    var ns=[];
+    if(snap.exists()) snap.forEach(function(c){ns.push(Object.assign({id:c.key},c.val()))});
+    ns.sort(function(a,b){return b.createdAt-a.createdAt});
+    var unread=ns.filter(function(n){return!n.read}).length;
+    document.getElementById('notif-badge').classList.toggle('hidden',unread===0);
+    renderNotifs(ns);
+  });
+}
+
+function renderNotifs(ns){
+  var el=document.getElementById('notif-list');
+  if(!ns.length){
+    el.innerHTML='<div class="empty"><div class="empty-ico">🔔</div><div class="empty-t">暂无通知</div><div class="empty-s">有家人评论或点赞时会通知你</div></div>';
+    return;
+  }
+  el.innerHTML=ns.map(function(n){
+    return '<div class="notif-item" onclick="markRead(\''+n.id+'\')">'+
+      '<div class="notif-av">💬</div>'+
+      '<div class="notif-content"><div class="notif-text">'+esc(n.text)+'</div><div class="notif-time">'+ago(n.createdAt)+'</div></div>'+
+      (!n.read?'<div class="notif-dot"></div>':'')+
+    '</div>';
+  }).join('');
+}
+
+window.markRead=async function(nid){
+  await db.ref('users/'+ME.userId+'/notifications/'+nid).update({read:true});
+}
+
+// ===== COMPOSE =====
+window.openCompose=function(){
+  pendingMedia=[];
+  document.getElementById('compose-ta').value='';
+  document.getElementById('media-prev').innerHTML='';
+  document.getElementById('share-toggle').checked=true;
+  document.getElementById('compose-wrap').classList.add('show');
+  setTimeout(function(){document.getElementById('compose-ta').focus()},200);
+}
+window.closeCompose=function(){
+  document.getElementById('compose-wrap').classList.remove('show');
+  pendingMedia=[];
+}
+window.pickImg=function(){document.getElementById('img-picker').click()}
+window.pickVid=function(){document.getElementById('vid-picker').click()}
+
+window.onImgPick=function(e){
+  Array.from(e.target.files).forEach(function(f){
+    pendingMedia.push({file:f,type:'image',prev:URL.createObjectURL(f)});
+  });
+  renderPrev(); e.target.value='';
+}
+window.onVidPick=function(e){
+  var f=e.target.files[0]; if(!f) return;
+  if(f.size>200*1024*1024){toast('视频不能超过200MB');return;}
+  pendingMedia.push({file:f,type:'video',prev:URL.createObjectURL(f)});
+  renderPrev(); e.target.value='';
+}
+
+function renderPrev(){
+  document.getElementById('media-prev').innerHTML=pendingMedia.map(function(m,i){
+    return '<div class="mprev-item">'+
+      (m.type==='image'?'<img src="'+m.prev+'">':'<video src="'+m.prev+'" preload="metadata" muted playsinline></video>')+
+      '<div class="mprev-del" onclick="rmMedia('+i+')">✕</div>'+
+    '</div>';
+  }).join('');
+}
+window.rmMedia=function(i){pendingMedia.splice(i,1);renderPrev()}
+
+window.doPost=async function(){
+  var txt=document.getElementById('compose-ta').value.trim();
+  var share=document.getElementById('share-toggle').checked;
+  if(!txt&&!pendingMedia.length){toast('请写点内容或添加图片');return;}
+
+  var btn=document.getElementById('post-btn');
+  btn.textContent='发布中…';btn.disabled=true;
+
+  try{
+    var uploaded=[];
+    for(var i=0;i<pendingMedia.length;i++){
+      var m=pendingMedia[i];
+      var ext=m.file.name.split('.').pop()||'dat';
+      var path='families/'+ME.familyCode+'/'+ME.userId+'/'+uid()+'.'+ext;
+      var ref=storage.ref(path);
+      await ref.put(m.file);
+      var url=await ref.getDownloadURL();
+      uploaded.push({url:url,type:m.type});
+    }
+
+    var data={text:txt,media:uploaded,author:ME.name,avatar:ME.avatar,authorId:ME.userId,createdAt:Date.now()};
+    // diary entry
+    await db.ref('users/'+ME.userId+'/diary').push(Object.assign({},data,{title:txt.slice(0,30)||(uploaded.length?'图片记录':''),shared:share}));
+    // family feed
+    if(share) await db.ref('families/'+ME.familyCode+'/posts').push(data);
+
+    toast(share?'已发布到家庭广场 🎉':'已保存到日记 ✓');
+    closeCompose();
+  } catch(err){
+    console.error(err);
+    toast('发布失败：'+err.message);
+  }
+  btn.textContent='发布';btn.disabled=false;
+}
+
+// ===== NAV =====
+window.switchPage=function(p){
+  document.querySelectorAll('.page').forEach(function(el){el.classList.remove('active')});
+  document.querySelectorAll('.nav-item').forEach(function(el){el.classList.remove('active')});
+  document.getElementById('page-'+p).classList.add('active');
+  var ni=document.getElementById('nav-'+p);
+  if(ni) ni.classList.add('active');
+  var titles={feed:'纳纳的家',diary:'我的日记',notif:'消息通知',profile:'我的'};
+  document.getElementById('tbar-title').textContent=titles[p]||'纳纳的家';
+  if(p==='notif'){
+    db.ref('users/'+ME.userId+'/notifications').once('value',function(snap){
+      if(!snap.exists()) return;
+      snap.forEach(function(c){if(!c.val().read) db.ref('users/'+ME.userId+'/notifications/'+c.key).update({read:true})});
+    });
+  }
+}
+
+// ===== LIGHTBOX =====
+window.openLb=function(type,url){
+  var c=document.getElementById('lb-content');
+  c.innerHTML=type==='img'?'<img src="'+url+'">':'<video src="'+url+'" controls autoplay playsinline style="max-width:96%;max-height:80vh;border-radius:8px"></video>';
+  document.getElementById('lightbox').classList.add('show');
+}
+window.closeLb=function(){
+  document.getElementById('lightbox').classList.remove('show');
+  document.getElementById('lb-content').innerHTML='';
+}
+
+// ===== SHEET MODAL =====
+window.showSheet=function(title,sub,body){
+  document.getElementById('sh-title').textContent=title;
+  document.getElementById('sh-sub').textContent=sub||'';
+  document.getElementById('sh-body').innerHTML=body||'';
+  document.getElementById('sheet-ov').classList.add('show');
+}
+window.closeSheet=function(e){
+  if(!e||e.target===document.getElementById('sheet-ov'))
+    document.getElementById('sheet-ov').classList.remove('show');
+}
+
+window.showFamCode=function(){
+  if(!FAM) return;
+  showSheet('家庭邀请码','把这个码分享给家人，他们注册时输入就能加入',
+    '<div class="family-code-show" style="margin-bottom:16px"><div class="code">'+FAM.code+'</div><p>长按可复制</p></div>'+
+    '<button class="btn-ok" onclick="cpCode(\''+FAM.code+'\');closeSheet()">复制邀请码</button>'
+  );
+}
+window.cpCode=function(code){
+  navigator.clipboard&&navigator.clipboard.writeText(code).then(function(){toast('已复制：'+code)}).catch(function(){toast('家庭码：'+code)});
+}
+window.showMembers=function(){
+  if(!FAM) return;
+  var mems=Object.values(FAM.members||{});
+  showSheet('家庭成员','共 '+mems.length+' 位成员',
+    mems.map(function(m){return'<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--gray-border)"><div style="width:36px;height:36px;border-radius:50%;background:var(--pink-light);display:flex;align-items:center;justify-content:center;font-size:20px">'+m.avatar+'</div><div style="font-size:15px;font-weight:500">'+esc(m.name)+'</div></div>'}).join('')+
+    '<button class="btn-sec" onclick="closeSheet()" style="width:100%;margin-top:12px">关闭</button>'
+  );
+}
+</script>
+</body>
+</html>
