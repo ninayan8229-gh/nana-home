@@ -301,7 +301,7 @@ input:checked+.toggle-track::before{transform:translateX(20px)}
       </div>
       <div class="form-group">
         <label class="form-label">家庭码</label>
-        <input class="form-input" id="lc" type="text" placeholder="输入6位家庭码" maxlength="6" style="text-transform:uppercase;letter-spacing:3px">
+        <input class="form-input" id="lc" type="text" placeholder="输入家庭码" maxlength="10" style="text-transform:uppercase;letter-spacing:2px">
         <div class="form-hint">注册时会生成家庭码，家人之间共用同一个</div>
       </div>
       <button class="btn-primary" onclick="doLogin()">进入纳纳的家</button>
@@ -337,7 +337,12 @@ input:checked+.toggle-track::before{transform:translateX(20px)}
           <button class="mode-btn" id="mb-join" onclick="setFamMode('join')">加入已有家庭</button>
         </div>
         <div id="join-code-wrap" class="hidden" style="margin-top:10px">
-          <input class="form-input" id="rc" type="text" placeholder="输入家庭码" maxlength="6" style="text-transform:uppercase;letter-spacing:3px">
+          <input class="form-input" id="rc" type="text" placeholder="输入家庭码" maxlength="10" style="text-transform:uppercase;letter-spacing:2px">
+        </div>
+        <div id="create-code-wrap">
+          <div class="form-hint" style="margin-bottom:6px">可以自定义家庭码，方便家人记忆</div>
+          <input class="form-input" id="new-fam-code" type="text" placeholder="不填则自动生成" maxlength="10" style="text-transform:uppercase;letter-spacing:2px">
+          <div class="form-hint">支持字母和数字，2-10位，如：NANA2026</div>
         </div>
         <div id="fam-code-result"></div>
       </div>
@@ -592,6 +597,7 @@ window.setFamMode=function(m){
   document.getElementById('mb-create').classList.toggle('active',m==='create');
   document.getElementById('mb-join').classList.toggle('active',m==='join');
   document.getElementById('join-code-wrap').classList.toggle('hidden',m!=='join');
+  document.getElementById('create-code-wrap').classList.toggle('hidden',m!=='create');
 }
 
 window.doRegister=async function(){
@@ -602,7 +608,16 @@ window.doRegister=async function(){
 
   var famCode='';
   if(famMode==='create'){
-    famCode=genCode();
+    var customCode=document.getElementById('new-fam-code').value.trim().toUpperCase();
+    if(customCode){
+      if(customCode.length<2){toast('家庭码至少2位');return;}
+      if(!/^[A-Z0-9]+$/.test(customCode)){toast('家庭码只能包含字母和数字');return;}
+      var existsnap=await db.ref('families/'+customCode).once('value');
+      if(existsnap.exists()){toast('此家庭码已被使用，换一个吧');return;}
+      famCode=customCode;
+    } else {
+      famCode=genCode();
+    }
   } else {
     famCode=document.getElementById('rc').value.trim().toUpperCase();
     if(!famCode){toast('请输入家庭码');return;}
