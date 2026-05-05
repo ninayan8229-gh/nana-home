@@ -539,11 +539,9 @@ function genCode(){
 }
 function ago(ts){
   if(!ts) return '';
-  var d=Date.now()-ts;
-  if(d<60000) return '刚刚';
-  if(d<3600000) return Math.floor(d/60000)+'分钟前';
-  if(d<86400000) return Math.floor(d/3600000)+'小时前';
-  return Math.floor(d/86400000)+'天前';
+  var d=new Date(ts);
+  var y=d.getFullYear(),mo=d.getMonth()+1,day=d.getDate(),h=d.getHours(),mi=d.getMinutes();
+  return y+'-'+(mo<10?'0':'')+mo+'-'+(day<10?'0':'')+day+' '+(h<10?'0':'')+h+':'+(mi<10?'0':'')+mi;
 }
 function fmtDate(ts){
   if(!ts) return '';
