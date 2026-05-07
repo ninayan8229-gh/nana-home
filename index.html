@@ -595,13 +595,18 @@ function loadFirebase(cfg){
 }
 
 async function bootApp(){
-  await new Promise(function(r){setTimeout(r,400)});
-  var saved=localStorage.getItem('fam_user');
-  if(saved){
-    ME=JSON.parse(saved);
-    await startApp();
-  } else {
-    document.getElementById('auth-page').style.display='block';
+  try {
+    await new Promise(function(r){setTimeout(r,400)});
+    var saved=localStorage.getItem('fam_user');
+    if(saved){
+      ME=JSON.parse(saved);
+      await startApp();
+    } else {
+      document.getElementById('auth-page').style.display='block';
+    }
+  } catch(e) {
+    console.error('bootApp error:', e);
+    document.getElementById('app-loading').innerHTML='<div style="text-align:center;padding:40px;color:#E8756A;font-size:14px">加载出错：'+e.message+'<br><br><button onclick="location.reload()" style="padding:8px 24px;border-radius:8px;background:var(--pink);color:#fff;border:none;font-size:14px;cursor:pointer">刷新重试</button></div>';
   }
   document.getElementById('app-loading').style.display='none';
 }
